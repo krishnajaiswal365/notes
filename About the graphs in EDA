@@ -1,0 +1,218 @@
+In Exploratory Data Analysis (EDA), various types of graphs and visualizations are used to understand the data. The choice of graph depends on the **type of data** (e.g., numerical, categorical, time series) and the **insight** you want to derive. Below is a list of **common types of graphs** used in EDA, along with the type of data they are best suited for and examples.
+
+---
+
+### **1. Histogram**
+- **Type of Data**: Numerical (Continuous or Discrete)
+- **Purpose**: To visualize the distribution of a single numerical variable.
+- **Example**: Distribution of ages in a population.
+```python
+import seaborn as sns
+import matplotlib.pyplot as plt
+sns.histplot(data=df, x='age', bins=30, kde=True)
+plt.title("Distribution of Age")
+plt.show()
+```
+
+---
+
+### **2. Bar Plot**
+- **Type of Data**: Categorical
+- **Purpose**: To compare the frequency or proportion of categories.
+- **Example**: Number of customers by gender.
+```python
+sns.countplot(data=df, x='gender')
+plt.title("Number of Customers by Gender")
+plt.show()
+```
+
+---
+
+### **3. Box Plot (Whisker Plot)**
+- **Type of Data**: Numerical vs Categorical
+- **Purpose**: To visualize the distribution of numerical data across categories and identify outliers.
+- **Example**: Distribution of income by education level.
+```python
+sns.boxplot(data=df, x='education', y='income')
+plt.title("Income Distribution by Education Level")
+plt.show()
+```
+
+---
+
+### **4. Scatter Plot**
+- **Type of Data**: Numerical vs Numerical
+- **Purpose**: To visualize the relationship between two numerical variables.
+- **Example**: Relationship between height and weight.
+```python
+sns.scatterplot(data=df, x='height', y='weight')
+plt.title("Height vs Weight")
+plt.show()
+```
+
+---
+
+### **5. Line Plot**
+- **Type of Data**: Time Series or Sequential Data
+- **Purpose**: To show trends over time or ordered categories.
+- **Example**: Monthly sales over a year.
+```python
+sns.lineplot(data=df, x='month', y='sales')
+plt.title("Monthly Sales Over Time")
+plt.show()
+```
+
+---
+
+### **6. Heatmap**
+- **Type of Data**: Numerical (Correlation Matrix)
+- **Purpose**: To visualize the correlation between numerical variables.
+- **Example**: Correlation between features in a dataset.
+```python
+corr_matrix = df.corr()
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm')
+plt.title("Correlation Matrix")
+plt.show()
+```
+
+---
+
+### **7. Pair Plot**
+- **Type of Data**: Numerical
+- **Purpose**: To visualize pairwise relationships between multiple numerical variables.
+- **Example**: Pairwise relationships between height, weight, and age.
+```python
+sns.pairplot(df[['height', 'weight', 'age']])
+plt.suptitle("Pairwise Relationships", y=1.02)
+plt.show()
+```
+
+---
+
+### **8. Pie Chart**
+- **Type of Data**: Categorical
+- **Purpose**: To show the proportion of categories in a single variable.
+- **Example**: Proportion of different product categories sold.
+```python
+df['product_category'].value_counts().plot(kind='pie', autopct='%1.1f%%')
+plt.title("Product Category Distribution")
+plt.show()
+```
+
+---
+
+### **9. Violin Plot**
+- **Type of Data**: Numerical vs Categorical
+- **Purpose**: To visualize the distribution and density of numerical data across categories.
+- **Example**: Distribution of exam scores by subject.
+```python
+sns.violinplot(data=df, x='subject', y='score')
+plt.title("Exam Scores by Subject")
+plt.show()
+```
+
+---
+
+### **10. Density Plot**
+- **Type of Data**: Numerical
+- **Purpose**: To visualize the probability density of a continuous variable.
+- **Example**: Density of ages in a population.
+```python
+sns.kdeplot(data=df, x='age', shade=True)
+plt.title("Density Plot of Age")
+plt.show()
+```
+
+---
+
+### **11. Stacked Bar Plot**
+- **Type of Data**: Categorical vs Categorical
+- **Purpose**: To compare the proportion of sub-categories within each category.
+- **Example**: Proportion of male and female customers by region.
+```python
+pd.crosstab(df['region'], df['gender']).plot(kind='bar', stacked=True)
+plt.title("Gender Distribution by Region")
+plt.show()
+```
+
+---
+
+### **12. Area Plot**
+- **Type of Data**: Time Series or Sequential Data
+- **Purpose**: To show cumulative trends over time.
+- **Example**: Cumulative sales over months.
+```python
+df.groupby('month')['sales'].sum().plot(kind='area')
+plt.title("Cumulative Sales Over Time")
+plt.show()
+```
+
+---
+
+### **13. Hexbin Plot**
+- **Type of Data**: Numerical vs Numerical (Large Datasets)
+- **Purpose**: To visualize the density of points in a 2D space.
+- **Example**: Density of points in a scatter plot of height vs weight.
+```python
+plt.hexbin(df['height'], df['weight'], gridsize=20, cmap='Blues')
+plt.title("Hexbin Plot of Height vs Weight")
+plt.colorbar()
+plt.show()
+```
+
+---
+
+### **14. Swarm Plot**
+- **Type of Data**: Numerical vs Categorical
+- **Purpose**: To show the distribution of data points across categories.
+- **Example**: Distribution of exam scores by subject.
+```python
+sns.swarmplot(data=df, x='subject', y='score')
+plt.title("Swarm Plot of Exam Scores by Subject")
+plt.show()
+```
+
+---
+
+### **15. Facet Grid**
+- **Type of Data**: Numerical vs Categorical (Multiple Subplots)
+- **Purpose**: To create multiple subplots based on categories.
+- **Example**: Scatter plots of height vs weight for each gender.
+```python
+g = sns.FacetGrid(df, col='gender')
+g.map(sns.scatterplot, 'height', 'weight')
+plt.suptitle("Height vs Weight by Gender")
+plt.show()
+```
+
+---
+
+### **Summary of Graphs and Data Types**
+| **Graph Type**       | **Data Type**                     | **Example Use Case**                     |
+|-----------------------|-----------------------------------|------------------------------------------|
+| Histogram            | Numerical                        | Distribution of ages                     |
+| Bar Plot             | Categorical                      | Number of customers by gender            |
+| Box Plot             | Numerical vs Categorical         | Income distribution by education level   |
+| Scatter Plot         | Numerical vs Numerical           | Height vs weight                         |
+| Line Plot            | Time Series                      | Monthly sales over time                  |
+| Heatmap              | Numerical (Correlation)          | Correlation between features             |
+| Pair Plot            | Numerical                        | Pairwise relationships between features  |
+| Pie Chart            | Categorical                      | Proportion of product categories         |
+| Violin Plot          | Numerical vs Categorical         | Exam scores by subject                   |
+| Density Plot         | Numerical                        | Density of ages                          |
+| Stacked Bar Plot     | Categorical vs Categorical       | Gender distribution by region            |
+| Area Plot            | Time Series                      | Cumulative sales over time               |
+| Hexbin Plot          | Numerical vs Numerical (Large)   | Density of height vs weight              |
+| Swarm Plot           | Numerical vs Categorical         | Distribution of exam scores by subject   |
+| Facet Grid           | Numerical vs Categorical (Multi) | Height vs weight by gender               |
+
+---
+
+### **When to Use Which Graph?**
+- **Numerical Data**: Histogram, Density Plot, Scatter Plot, Box Plot, Violin Plot, Hexbin Plot.
+- **Categorical Data**: Bar Plot, Pie Chart, Stacked Bar Plot.
+- **Time Series Data**: Line Plot, Area Plot.
+- **Relationships**: Scatter Plot, Pair Plot, Heatmap, Facet Grid.
+- **Outliers**: Box Plot, Violin Plot.
+
+By using these graphs, you can gain deep insights into your data and make informed decisions during the machine learning process.
