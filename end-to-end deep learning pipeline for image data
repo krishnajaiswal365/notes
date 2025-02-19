@@ -1,0 +1,213 @@
+Creating an **end-to-end deep learning pipeline for image data** involves several steps, including data loading, preprocessing, model building, training, evaluation, and inference. Below is a complete Python code example using **PyTorch** for an image classification task.
+
+---
+
+### **End-to-End Image Data Pipeline in PyTorch**
+
+#### **Step 1: Install Required Libraries**
+```bash
+pip install torch torchvision matplotlib numpy
+```
+
+---
+
+#### **Step 2: Import Libraries**
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms, datasets
+import matplotlib.pyplot as plt
+import numpy as np
+```
+
+---
+
+#### **Step 3: Load and Preprocess Data**
+We'll use the **CIFAR-10 dataset** for this example, but you can replace it with your custom dataset.
+
+```python
+# Define transformations for training and testing data
+transform_train = transforms.Compose([
+    transforms.RandomHorizontalFlip(),  # Data augmentation
+    transforms.RandomRotation(10),     # Data augmentation
+    transforms.ToTensor(),             # Convert PIL image to tensor
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # Normalize
+])
+
+transform_test = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+
+# Load CIFAR-10 dataset
+train_dataset = datasets.CIFAR10(root="./data", train=True, download=True, transform=transform_train)
+test_dataset = datasets.CIFAR10(root="./data", train=False, download=True, transform=transform_test)
+
+# Create data loaders
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+```
+
+---
+
+#### **Step 4: Define the Model**
+We'll use a simple Convolutional Neural Network (CNN) for image classification.
+
+```python
+class SimpleCNN(nn.Module):
+    def __init__(self):
+        super(SimpleCNN, self).__init__()
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)  # Input: 3 channels, Output: 32 channels
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)  # Downsample by a factor of 2
+        self.fc1 = nn.Linear(64 * 8 * 8, 512)  # Fully connected layer
+        self.fc2 = nn.Linear(512, 10)  # Output: 10 classes (CIFAR-10)
+
+    def forward(self, x):
+        x = self.pool(nn.functional.relu(self.conv1(x)))
+        x = self.pool(nn.functional.relu(self.conv2(x)))
+        x = x.view(-1, 64 * 8 * 8)  # Flatten the tensor
+        x = nn.functional.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+# Initialize the model
+model = SimpleCNN()
+```
+
+---
+
+#### **Step 5: Define Loss Function and Optimizer**
+```python
+criterion = nn.CrossEntropyLoss()  # Loss function
+optimizer = optim.Adam(model.parameters(), lr=0.001)  # Optimizer
+```
+
+---
+
+#### **Step 6: Train the Model**
+```python
+# Training loop
+num_epochs = 10
+for epoch in range(num_epochs):
+    running_loss = 0.0
+    for i, data in enumerate(train_loader, 0):
+        inputs, labels = data
+
+        # Zero the parameter gradients
+        optimizer.zero_grad()
+
+        # Forward pass
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+
+        # Backward pass and optimize
+        loss.backward()
+        optimizer.step()
+
+        # Print statistics
+        running_loss += loss.item()
+        if i % 100 == 99:  # Print every 100 mini-batches
+            print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{len(train_loader)}], Loss: {running_loss / 100:.4f}")
+            running_loss = 0.0
+
+print("Training finished.")
+```
+
+---
+
+#### **Step 7: Evaluate the Model**
+```python
+# Evaluation on test data
+correct = 0
+total = 0
+with torch.no_grad():  # Disable gradient computation
+    for data in test_loader:
+        images, labels = data
+        outputs = model(images)
+        _, predicted = torch.max(outputs.data, 1)  # Get the predicted class
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+print(f"Accuracy on test data: {100 * correct / total:.2f}%")
+```
+
+---
+
+#### **Step 8: Visualize Predictions**
+```python
+# Function to show an image
+def imshow(img):
+    img = img / 2 + 0.5  # Unnormalize
+    npimg = img.numpy()
+    plt.imshow(np.transpose(npimg, (1, 2, 0)))
+    plt.show()
+
+# Get some random test images
+dataiter = iter(test_loader)
+images, labels = next(dataiter)
+
+# Show images and predictions
+imshow(torchvision.utils.make_grid(images))
+print("Ground Truth:", " ".join(f"{labels[j]}" for j in range(4)))
+
+# Predict
+outputs = model(images)
+_, predicted = torch.max(outputs, 1)
+print("Predicted:", " ".join(f"{predicted[j]}" for j in range(4)))
+```
+
+---
+
+#### **Step 9: Save and Load the Model**
+```python
+# Save the model
+torch.save(model.state_dict(), "cifar10_cnn.pth")
+
+# Load the model
+model = SimpleCNN()
+model.load_state_dict(torch.load("cifar10_cnn.pth"))
+model.eval()  # Set the model to evaluation mode
+```
+
+---
+
+### **Step 10: Inference on New Images**
+You can use the trained model to make predictions on new images.
+
+```python
+from PIL import Image
+
+# Load and preprocess a new image
+def preprocess_image(image_path):
+    image = Image.open(image_path)
+    transform = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+    image = transform(image).unsqueeze(0)  # Add batch dimension
+    return image
+
+# Predict on a new image
+image_path = "new_image.jpg"
+image = preprocess_image(image_path)
+output = model(image)
+_, predicted = torch.max(output, 1)
+print(f"Predicted class: {predicted.item()}")
+```
+
+---
+
+### **Summary**
+This end-to-end pipeline covers:
+1. **Data loading and preprocessing**.
+2. **Model definition** (CNN).
+3. **Training and evaluation**.
+4. **Visualization of results**.
+5. **Saving and loading the model**.
+6. **Inference on new images**.
+
+You can adapt this pipeline for other image datasets or tasks (e.g., object detection, segmentation) by modifying the dataset, model architecture, and training loop.
