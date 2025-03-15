@@ -1,0 +1,155 @@
+To perform sentiment analysis on the GoEmotions dataset using BERT, XGBoost, and Random Forest, and to handle imbalanced data using SMOTE, follow the steps below. This code assumes you have the necessary libraries installed (`transformers`, `scikit-learn`, `xgboost`, `imblearn`, etc.).
+
+### Step 1: Load the GoEmotions Dataset
+The GoEmotions dataset can be loaded from Hugging Face's `datasets` library.
+
+```python
+from datasets import load_dataset
+
+# Load the GoEmotions dataset
+dataset = load_dataset("go_emotions")
+train_data = dataset["train"]
+test_data = dataset["test"]
+```
+
+### Step 2: Preprocess the Data
+We will use BERT tokenizer to preprocess the text data.
+
+```python
+from transformers import BertTokenizer
+
+# Load the BERT tokenizer
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+
+# Tokenize the text data
+def tokenize_function(examples):
+    return tokenizer(examples["text"], padding="max_length", truncation=True, max_length=128)
+
+train_data = train_data.map(tokenize_function, batched=True)
+test_data = test_data.map(tokenize_function, batched=True)
+```
+
+### Step 3: Convert Data to PyTorch Tensors
+We need to convert the tokenized data into PyTorch tensors.
+
+```python
+import torch
+
+train_data.set_format(type="torch", columns=["input_ids", "attention_mask", "label"])
+test_data.set_format(type="torch", columns=["input_ids", "attention_mask", "label"])
+```
+
+### Step 4: Fine-Tune BERT Model
+We will fine-tune a BERT model for sentiment classification.
+
+```python
+from transformers import BertForSequenceClassification, Trainer, TrainingArguments
+
+# Load the BERT model for sequence classification
+model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=28)
+
+# Define training arguments
+training_args = TrainingArguments(
+    output_dir="./results",
+    evaluation_strategy="epoch",
+    learning_rate=2e-5,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=16,
+    num_train_epochs=3,
+    weight_decay=0.01,
+)
+
+# Define the Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_data,
+    eval_dataset=test_data,
+)
+
+# Fine-tune the model
+trainer.train()
+```
+
+### Step 5: Evaluate BERT Model
+Evaluate the fine-tuned BERT model on the test set.
+
+```python
+# Evaluate the model
+results = trainer.evaluate()
+print(f"BERT Model Accuracy: {results['eval_accuracy']}")
+```
+
+### Step 6: Train XGBoost and Random Forest Models
+If the BERT model's accuracy is not satisfactory, we can try traditional machine learning models like XGBoost and Random Forest. We will use BERT embeddings as features.
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from sklearn.metrics import accuracy_score
+
+# Extract BERT embeddings
+def get_embeddings(dataset):
+    embeddings = []
+    for example in dataset:
+        with torch.no_grad():
+            output = model.bert(input_ids=example["input_ids"].unsqueeze(0), attention_mask=example["attention_mask"].unsqueeze(0))
+        embeddings.append(output.last_hidden_state[:, 0, :].squeeze().numpy())
+    return embeddings
+
+train_embeddings = get_embeddings(train_data)
+test_embeddings = get_embeddings(test_data)
+
+# Train XGBoost
+xgb_model = XGBClassifier()
+xgb_model.fit(train_embeddings, train_data["label"])
+xgb_preds = xgb_model.predict(test_embeddings)
+xgb_accuracy = accuracy_score(test_data["label"], xgb_preds)
+print(f"XGBoost Accuracy: {xgb_accuracy}")
+
+# Train Random Forest
+rf_model = RandomForestClassifier()
+rf_model.fit(train_embeddings, train_data["label"])
+rf_preds = rf_model.predict(test_embeddings)
+rf_accuracy = accuracy_score(test_data["label"], rf_preds)
+print(f"Random Forest Accuracy: {rf_accuracy}")
+```
+
+### Step 7: Handle Imbalanced Data with SMOTE
+If the accuracy is still not good, we can use SMOTE to handle class imbalance.
+
+```python
+from imblearn.over_sampling import SMOTE
+
+# Apply SMOTE to the training data
+smote = SMOTE()
+train_embeddings_resampled, train_labels_resampled = smote.fit_resample(train_embeddings, train_data["label"])
+
+# Train XGBoost with SMOTE
+xgb_model_smote = XGBClassifier()
+xgb_model_smote.fit(train_embeddings_resampled, train_labels_resampled)
+xgb_preds_smote = xgb_model_smote.predict(test_embeddings)
+xgb_accuracy_smote = accuracy_score(test_data["label"], xgb_preds_smote)
+print(f"XGBoost with SMOTE Accuracy: {xgb_accuracy_smote}")
+
+# Train Random Forest with SMOTE
+rf_model_smote = RandomForestClassifier()
+rf_model_smote.fit(train_embeddings_resampled, train_labels_resampled)
+rf_preds_smote = rf_model_smote.predict(test_embeddings)
+rf_accuracy_smote = accuracy_score(test_data["label"], rf_preds_smote)
+print(f"Random Forest with SMOTE Accuracy: {rf_accuracy_smote}")
+```
+
+### Step 8: Compare Results
+Compare the accuracy of BERT, XGBoost, and Random Forest models with and without SMOTE.
+
+```python
+print(f"BERT Model Accuracy: {results['eval_accuracy']}")
+print(f"XGBoost Accuracy: {xgb_accuracy}")
+print(f"Random Forest Accuracy: {rf_accuracy}")
+print(f"XGBoost with SMOTE Accuracy: {xgb_accuracy_smote}")
+print(f"Random Forest with SMOTE Accuracy: {rf_accuracy_smote}")
+```
+
+### Conclusion
+This code provides a complete pipeline for sentiment analysis on the GoEmotions dataset using BERT, XGBoost, and Random Forest. If the accuracy is not satisfactory, SMOTE is applied to handle class imbalance. You can further tune hyperparameters or try other techniques to improve performance.
