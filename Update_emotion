@@ -1,0 +1,207 @@
+To analyze and compare the performance of **BERT**, **Random Forest**, and **XGBoost** on the **GoEmotions dataset** split into three files (`goemotion_1.csv`, `goemotion_2.csv`, and `goemotion_3.csv`), follow this step-by-step guide. I'll include explanations and code snippets for each step.
+
+---
+
+### **Step 1: Load and Preprocess the Dataset**
+#### **1.1 Load the Dataset**
+Load the three CSV files and combine them into a single dataset.
+
+```python
+import pandas as pd
+
+# Load the datasets
+goemotion_1 = pd.read_csv('goemotion_1.csv')
+goemotion_2 = pd.read_csv('goemotion_2.csv')
+goemotion_3 = pd.read_csv('goemotion_3.csv')
+
+# Combine the datasets
+full_data = pd.concat([goemotion_1, goemotion_2, goemotion_3], ignore_index=True)
+
+# Display the first few rows
+print(full_data.head())
+```
+
+#### **1.2 Explore the Dataset**
+Perform basic EDA to understand the dataset:
+- Check the distribution of emotions.
+- Analyze text length.
+- Check for missing values.
+
+```python
+# Check the shape of the dataset
+print("Full Data Shape:", full_data.shape)
+
+# Check the distribution of emotions
+emotion_counts = full_data.iloc[:, 1:].sum()  # Assuming emotions are columns 1 to 27
+print("Emotion Distribution:\n", emotion_counts)
+
+# Plot the distribution
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.figure(figsize=(12, 6))
+sns.barplot(x=emotion_counts.index, y=emotion_counts.values)
+plt.xticks(rotation=90)
+plt.title("Emotion Distribution")
+plt.show()
+
+# Analyze text length
+full_data['text_length'] = full_data['text'].apply(len)
+plt.figure(figsize=(10, 6))
+sns.histplot(full_data['text_length'], bins=50)
+plt.title("Distribution of Text Length")
+plt.show()
+
+# Check for missing values
+print("Missing Values:\n", full_data.isnull().sum())
+```
+
+#### **1.3 Preprocess the Data**
+Clean the text data and split it into features (`text`) and labels (`emotions`).
+
+```python
+# Clean text data
+import re
+
+def clean_text(text):
+    text = re.sub(r'http\S+', '', text)  # Remove URLs
+    text = re.sub(r'[^a-zA-Z\s]', '', text)  # Remove special characters
+    text = text.lower()  # Convert to lowercase
+    return text
+
+full_data['text'] = full_data['text'].apply(clean_text)
+
+# Split into features and labels
+X = full_data['text']
+y = full_data.iloc[:, 1:28]  # Assuming emotions are columns 1 to 27
+
+# Split into train, validation, and test sets
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=42)
+```
+
+---
+
+### **Step 2: Train and Evaluate BERT**
+#### **2.1 Tokenize the Data**
+Use the Hugging Face `transformers` library to tokenize the text for BERT.
+
+```python
+from transformers import BertTokenizer
+
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+# Tokenize the data
+def tokenize_data(texts, max_length=128):
+    return tokenizer(
+        texts.tolist(),
+        truncation=True,
+        padding=True,
+        max_length=max_length,
+        return_tensors='tf'
+    )
+
+train_encodings = tokenize_data(X_train)
+val_encodings = tokenize_data(X_val)
+test_encodings = tokenize_data(X_test)
+```
+
+#### **2.2 Fine-Tune BERT**
+Use TensorFlow to fine-tune the BERT model.
+
+```python
+from transformers import TFBertForSequenceClassification
+import tensorflow as tf
+
+# Load the BERT model
+model = TFBertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=27))
+
+# Compile the model
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(learning_rate=2e-5),
+    loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+    metrics=['accuracy']
+)
+
+# Train the model
+history = model.fit(
+    dict(train_encodings),
+    y_train.values,
+    validation_data=(dict(val_encodings), y_val.values),
+    epochs=3,
+    batch_size=16
+)
+```
+
+#### **2.3 Evaluate BERT**
+Evaluate the model on the test set.
+
+```python
+# Evaluate on the test set
+test_loss, test_accuracy = model.evaluate(dict(test_encodings), y_test.values)
+print("Test Accuracy (BERT):", test_accuracy)
+```
+
+---
+
+### **Step 3: Train and Evaluate Random Forest**
+#### **3.1 Extract Features**
+Use TF-IDF to convert text into numerical features.
+
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+vectorizer = TfidfVectorizer(max_features=5000)
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+```
+
+#### **3.2 Train Random Forest**
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train_tfidf, y_train)
+```
+
+#### **3.3 Evaluate Random Forest**
+```python
+from sklearn.metrics import classification_report
+
+y_pred_rf = rf_model.predict(X_test_tfidf)
+print("Random Forest Performance:\n", classification_report(y_test, y_pred_rf))
+```
+
+---
+
+### **Step 4: Train and Evaluate XGBoost**
+#### **4.1 Train XGBoost**
+```python
+import xgboost as xgb
+
+xgb_model = xgb.XGBClassifier(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
+xgb_model.fit(X_train_tfidf, y_train)
+```
+
+#### **4.2 Evaluate XGBoost**
+```python
+y_pred_xgb = xgb_model.predict(X_test_tfidf)
+print("XGBoost Performance:\n", classification_report(y_test, y_pred_xgb))
+```
+
+---
+
+### **Step 5: Compare Performance**
+Compare the performance of BERT, Random Forest, and XGBoost using metrics like accuracy, precision, recall, and F1-score.
+
+---
+
+### **Summary**
+1. Load and preprocess the dataset.
+2. Fine-tune BERT and evaluate its performance.
+3. Train and evaluate Random Forest and XGBoost using TF-IDF features.
+4. Compare the results of all three models.
+
+Let me know if you need further assistance!
