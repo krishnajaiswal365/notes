@@ -1,0 +1,69 @@
+To push a folder from PyCharm to GitHub, follow these steps:
+
+---
+
+### **1. Set Up GitHub Repository**
+- If you don’t already have a GitHub repository, create one on [GitHub](https://github.com).
+- Copy the repository URL (e.g., `https://github.com/username/repo-name.git`).
+
+---
+
+### **2. Initialize Git in Your Project**
+1. Open your project in PyCharm.
+2. Go to **VCS > Enable Version Control Integration**.
+3. Select **Git** from the dropdown and click **OK**.
+   - This initializes Git in your project folder.
+
+---
+
+### **3. Add Files to Git**
+1. Right-click on the folder or files you want to push.
+2. Select **Git > Add**.
+   - This stages the files for committing.
+
+---
+
+### **4. Commit the Files**
+1. Go to **VCS > Commit** (or use the shortcut `Ctrl+K`).
+2. Write a commit message describing your changes.
+3. Click **Commit**.
+
+---
+
+### **5. Link Your Local Repository to GitHub**
+1. Go to **VCS > Git > Remotes**.
+2. Click the **+** button to add a new remote.
+3. Paste the GitHub repository URL you copied earlier.
+4. Name the remote `origin` (default name for the main remote).
+
+---
+
+### **6. Push to GitHub**
+1. Go to **VCS > Git > Push** (or use the shortcut `Ctrl+Shift+K`).
+2. Select the branch you want to push (e.g., `main` or `master`).
+3. Click **Push**.
+   - Your folder and files will now be uploaded to GitHub.
+
+---
+
+### **7. Verify on GitHub**
+- Go to your GitHub repository and refresh the page.
+- You should see your folder and files there.
+
+---
+
+### **Optional: Using the Terminal in PyCharm**
+If you prefer using the terminal:
+1. Open the terminal in PyCharm (**View > Tool Windows > Terminal**).
+2. Run the following commands:
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin https://github.com/username/repo-name.git
+   git push -u origin main
+   ```
+
+---
+
+That’s it! Your folder is now pushed to GitHub. Let me know if you need further assistance! 🚀
